@@ -11,6 +11,7 @@ from kivy.event import EventDispatcher
 from kivy.properties import StringProperty
 from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup 
+from kivy.core.clipboard import Clipboard
 
 
 from utils import getAvailableEnviroments, getAvailabeCompilers, getAvailablePythons
@@ -155,7 +156,7 @@ class EnviromentEntry(BoxLayout):
         self.enviroment_button.bind(on_release = openPopUpCallback)
         self.add_widget(self.enviroment_button)
 
-        self.open_cmd_btn = Button(text="cmd", size_hint = (0.2,1))
+        self.open_cmd_btn = Button(text="cmd", size_hint = (0.13,1))
 
         def openCMDCallback(instance):
             environments = getAvailableEnviroments()
@@ -169,9 +170,19 @@ class EnviromentEntry(BoxLayout):
             environments = getAvailableEnviroments()
             openEnviromentFolder(os.path.dirname(environments[self.enviroment]))
 
-        self.open_dir_btn = Button(text="op", size_hint = (0.2,1))
+        self.open_dir_btn = Button(text="op", size_hint = (0.13,1))
         self.open_dir_btn.bind(on_release = openDirCallback)
         self.add_widget(self.open_dir_btn)
+
+        def copyPathToClipboard(instance):
+            environments = getAvailableEnviroments()
+            python_path = os.path.join(os.path.dirname(environments[self.enviroment]), "python.exe")
+            Clipboard.copy(python_path)
+            
+
+        self.copy_path = Button(text="copy", size_hint = (0.13,1))
+        self.copy_path.bind(on_release = copyPathToClipboard)
+        self.add_widget(self.copy_path)
 
 
 
