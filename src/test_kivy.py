@@ -51,6 +51,13 @@ def getPipPackages(python):
     data = ret_status.stdout.decode("utf-8").split("\r\n")
     return data, ret_status
 
+def installPipPackages(env_name, packages):
+    from data import envs
+    enviroment_path = envs[0]
+    pip_path = os.path.join(enviroment_path, env_name,"Scripts", "pip.exe")
+    for package in packages:
+        ret_status = subprocess.run([pip_path,"install", package], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
 def createNewEnviroment(name):
     from data import envs
     python_versions = getAvailablePythons()
@@ -113,16 +120,36 @@ class PythonVersionRow(BoxLayout):
 class CreateNewEnviromentRow(BoxLayout):
     def __init__(self, **kwargs):
         super(CreateNewEnviromentRow, self).__init__()
+        self.packages = TextInput(multiline=False)
+        self.layout = GridLayout(cols = 1)
+        self.popup = Popup(title = "Insert packages to install with pip separated by ;", size_hint = (0.5,0.5), content = self.layout)
+        
+        self.layout.add_widget(self.packages)
+        
         self.btn = Button(text = "Create new enviroment")
-        self.textinput = TextInput(text='Enviroment Name', multiline=False)
+        self.textinput = TextInput(text='Enviroment Name', multiline=True)
+
+        
 
         def createNewEnvCallback(x):
-            createNewEnviroment(self.textinput.text.replace(" ", "_"))
+            if self.textinput.text != "Enviroment Name":
+                env_name = self.textinput.text.replace(" ", "_")
+                createNewEnviroment(env_name)
+                installPipPackages(env_name, self.packages.text.split(";"))
+                
         
         self.btn.bind(on_release = createNewEnvCallback)
         self.add_widget(self.btn)
-
         self.add_widget(self.textinput)
+
+        self.packages_btn = Button(text = "Configure pip packages")
+        
+        def configurePipPackagesCallback(x):
+            self.popup.open()
+
+        self.packages_btn.bind(on_release = configurePipPackagesCallback)
+        self.add_widget(self.packages_btn)
+            
 
 class MenuRow(BoxLayout):
     def __init__(self, **kwargs):
@@ -130,9 +157,9 @@ class MenuRow(BoxLayout):
 
         self.add_widget(CompilerRow())
         self.add_widget(PythonVersionRow())
-        self.add_widget(CreateNewEnviromentRow())
-        
-        
+
+        self.create_new_env = CreateNewEnviromentRow()
+        self.add_widget(self.create_new_env)     
 
 
 class EnviromentEntry(BoxLayout):
@@ -189,17 +216,28 @@ class EnviromentEntry(BoxLayout):
 class EnviromentsList(BoxLayout):
     def __init__(self, **kwargs):
         super(EnviromentsList, self).__init__(**kwargs)
-        self.buttons = [EnviromentEntry(enviroment = enviroment) for enviroment in getAvailableEnviroments()]
+        self.getEnviroments()
+    
+    def getEnviroments(self):
+        self.buttons = []
+        self.buttons = [EnviromentEntry(enviroment = enviroment) for enviroment in getAvailableEnviroments() if enviroment not in [x.text for x in self.buttons]]
         for button in self.buttons:
-            self.add_widget(button)
+            if button not in self.children:
+                self.add_widget(button)
+    
 
 
 class Program(BoxLayout):
     def __init__(self, **kwargs):
         super(Program, self).__init__(**kwargs)
 
-        self.add_widget(MenuRow())
-        self.add_widget(EnviromentsList())
+        self.menu = MenuRow()
+        self.add_widget(self.menu)
+
+
+        self.env_list = EnviromentsList()
+        self.add_widget(self.env_list)
+
 
 class MyScreen(Screen):
     def __init__(self, **kwargs):
